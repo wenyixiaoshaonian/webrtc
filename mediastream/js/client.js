@@ -17,6 +17,7 @@ picture.height = 480;
 var videoplay = document.querySelector('video#player');
 //var audioplay = document.querySelector('audio#audioplayer');
 
+var divConstraints = document.querySelector('div#constraints');
 
 function gotDevices(deviceInfos){
 
@@ -38,9 +39,13 @@ function gotDevices(deviceInfos){
 
 function gotMediaStream(stream){
 
+	var videoTrack = stream.getVideoTracks()[0];
+	var videoConstraints = videoTrack.getSettings();
+
+	divConstraints.textContent = JSON.stringify(videoConstraints, null, 2);
+
 	videoplay.srcObject = stream;
 	//audioplay.srcObject = stream;
-
 	return navigator.mediaDevices.enumerateDevices();
 }
 
@@ -61,8 +66,8 @@ function start() {
 		var deviceId = videoSource.value; 
 		var constraints = {
 			video : {
-				width: 640,	
-				height: 480,
+				width: 320,	
+				height: 240,
 				frameRate:15,
 				facingMode: 'enviroment',
 				deviceId : deviceId ? {exact:deviceId} : undefined 
