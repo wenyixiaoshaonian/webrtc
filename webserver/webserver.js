@@ -7,6 +7,8 @@ var fs = require('fs');
 var express = require('express');
 var serveIndex = require('serve-index');
 
+var socketIO = require('socket.io');
+
 var app = express();
 app.use(serveIndex('./public'));
 app.use(express.static('./public'));
@@ -19,4 +21,9 @@ var options = {
 	cert : fs.readFileSync('./cert/cert.pem')
 }
 var https_server = https.createServer(options,app);
+var io = socketIO.listen(https_server);
+
+io.sockets.on('connect',(socket)=> {
+	socket.on('join',(room))
+})
 https_server.listen(443,'0.0.0.0');
