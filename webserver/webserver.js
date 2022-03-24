@@ -23,7 +23,26 @@ var options = {
 var https_server = https.createServer(options,app);
 var io = socketIO.listen(https_server);
 
-io.sockets.on('connect',(socket)=> {
-	socket.on('join',(room))
+io.sockets.on('connection',(socket)=> {
+	socket.on('join',(room) => {
+		socket.join(room);
+		var myroom = io.sockets.adapter.rooms[room];
+		var users = Object.keys(myroom.sockets).length;
+		socket.emit('joined',room,socket.id);
+//		socket.to(room).emit('joined',room,socket.id);	//房间内除自己以外
+//		io.in(room).emit('joined',room,socket.id);		//房间内所有人
+//		socket.broadcast.emit('joined',room,socket.id);	//站点所有人 除自己
+	});
+	socket.on('leave',(room) => {
+		var myroom = io.sockets.adapter.rooms[room];
+		var users = Object.keys(myroom.sockets).length;
+
+		socket.leave(room);
+
+		socket.emit('joined',room,socket.id);
+//		socket.to(room).emit('joined',room,socket.id);	//房间内除自己以外
+//		io.in(room).emit('joined',room,socket.id);		//房间内所有人
+//		socket.broadcast.emit('joined',room,socket.id);	//站点所有人 除自己
+	});	
 })
 https_server.listen(443,'0.0.0.0');
