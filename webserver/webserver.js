@@ -13,8 +13,8 @@ var app = express();
 app.use(serveIndex('./public'));
 app.use(express.static('./public'));
 
-var http_server = http.createServer(app);
-http_server.listen(80,'0.0.0.0');
+// var http_server = http.createServer(app);
+// http_server.listen(80,'0.0.0.0');
 
 var options = {
 	key : fs.readFileSync('./cert/key.pem'),
@@ -44,5 +44,8 @@ io.sockets.on('connection',(socket)=> {
 //		io.in(room).emit('joined',room,socket.id);		//房间内所有人
 //		socket.broadcast.emit('joined',room,socket.id);	//站点所有人 除自己
 	});	
+	socket.on('message', (room, data)=>{
+		io.to(room).emit('message', room, socket.id, data)//房间内所有人
+	});
 })
-https_server.listen(443,'0.0.0.0');
+https_server.listen(4004,'0.0.0.0');
