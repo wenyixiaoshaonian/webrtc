@@ -48,4 +48,4 @@ io.sockets.on('connection',(socket)=> {
 		io.to(room).emit('message', room, socket.id, data)//房间内所有人
 	});
 })
-https_server.listen(4004,'0.0.0.0');
+https_server.listen(443,'0.0.0.0');
