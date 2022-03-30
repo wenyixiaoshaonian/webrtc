@@ -7,6 +7,9 @@ var btnStart = document.querySelector('button#start');
 var btnCall = document.querySelector('button#call');
 var btnHangup = document.querySelector('button#hangup');
 
+var offer = document.querySelector('textarea#offer');
+var answer = document.querySelector('textarea#answer');
+
 var localStream;
 var pc1;
 var pc2;
@@ -49,7 +52,7 @@ function handleAnswerError() {
 
 function getAnswer(desc) {
 	pc2.setLocalDescription(desc);
-
+	answer.value = desc.sdp;
 	//send desc to signal
 	//receive desc from signal
 
@@ -57,7 +60,7 @@ function getAnswer(desc) {
 }
 function getOffer(desc) {
 	pc1.setLocalDescription(desc);
-
+	offer.value = desc.sdp;
 	//send desc to signal
 	//receive desc from signal
 
