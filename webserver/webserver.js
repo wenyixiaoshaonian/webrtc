@@ -9,6 +9,7 @@ var serveIndex = require('serve-index');
 
 var socketIO = require('socket.io');
 
+var USERCOUNTS = 3
 var app = express();
 app.use(serveIndex('./public'));
 app.use(express.static('./public'));
@@ -28,7 +29,18 @@ io.sockets.on('connection',(socket)=> {
 		socket.join(room);
 		var myroom = io.sockets.adapter.rooms[room];
 		var users = Object.keys(myroom.sockets).length;
-		socket.emit('joined',room,socket.id);
+		
+
+		if(users < USERCOUNTS) {
+			socket.emit('joined',room,socket.id);
+
+			if(users > 1)
+				socket.to(room).emit('otherjoin',room,socket.id);	//房间内除自己以外
+		}
+		else {
+			socket.leave(room);
+			socket.emit('full',room,socket.id);
+		}
 //		socket.to(room).emit('joined',room,socket.id);	//房间内除自己以外
 //		io.in(room).emit('joined',room,socket.id);		//房间内所有人
 //		socket.broadcast.emit('joined',room,socket.id);	//站点所有人 除自己
@@ -39,7 +51,8 @@ io.sockets.on('connection',(socket)=> {
 
 		socket.leave(room);
 
-		socket.emit('joined',room,socket.id);
+		socket.emit('leaved',room,socket.id);
+		socket.to(room).emit('bye',room,socket.id);
 //		socket.to(room).emit('joined',room,socket.id);	//房间内除自己以外
 //		io.in(room).emit('joined',room,socket.id);		//房间内所有人
 //		socket.broadcast.emit('joined',room,socket.id);	//站点所有人 除自己
