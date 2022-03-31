@@ -97,6 +97,7 @@ function call() {
 		offerToRecieveAudio: 0,
 		offerToReceiveVideo: 1
 	}
+	
 	pc1.createOffer(offerOptions)
 					.then(getOffer)
 					.catch(handleOfferError);

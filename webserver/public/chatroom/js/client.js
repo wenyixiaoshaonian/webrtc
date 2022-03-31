@@ -18,6 +18,7 @@ btnConnect.onclick = () => {
         btnConnect.disabled = true;
         inputArea.disabled = false;
         btnSend.disabled = false;
+        console.log('>>>>=== joined');
     });
 
     socket.on('leaved',(room,id) => {
