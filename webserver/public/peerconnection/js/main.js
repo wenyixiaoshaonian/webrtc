@@ -25,14 +25,25 @@ function sendMessage(rooms,data) {
     }
 }
 function handleOfferError() {
-	concole.error('fild to create offer');
+	console.error('fild to create offer');
 }
+function handleAnswerError() {
+	console.error('fild to create answer');
+}
+
 function getOffer(desc) {
-    //将收集好的本地媒体信息填充到pc1中，同时向stun服务器发送收集候选者的请求
-	pc1.setLocalDescription(desc);
+    //将收集好的本地媒体信息填充到pc中，同时向stun服务器发送收集候选者的请求
+	pc.setLocalDescription(desc);
     //将SDP通过信令服务器发送给对端
 	sendMessage(rooms,desc);
 }
+function getAnswer(desc) {
+    //将收集好的本地媒体信息填充到pc中，同时向stun服务器发送收集候选者的请求
+	pc.setLocalDescription(desc);
+    //将SDP通过信令服务器发送给对端
+	sendMessage(rooms,desc);
+}
+
 function call() {
     if(state === 'joined_conn') {
         if(pc) {
@@ -41,10 +52,9 @@ function call() {
                 offerToReceiveVideo: 1
             }
             //创建一个offer的SDP,并按照我们的配置收集媒体信息
-            pc1.createOffer(offerOptions)
+            pc.createOffer(offerOptions)
                             .then(getOffer)
                             .catch(handleOfferError);
-        }
         }
     }
 }
@@ -55,7 +65,7 @@ function handleError(err) {
 function start() {
 	if (!navigator.mediaDevices ||
 		!navigator.mediaDevices.getUserMedia) {
-		concole.error('getUserMedia is not support');
+            console.error('getUserMedia is not support');
 	}
 	else {
 		var constraints = {
@@ -91,17 +101,18 @@ function conn() {
         state = 'joined_conn';
 
         //开始媒体协商
+        call();
     });
     socket.on('full',(room,id) => {
         console.log('>>>>=== full');
         state = 'leaved';
-        socket.disconect();
+        socket.disconnect();
         alert('the room is full');
     });
     socket.on('leaved',(room,id) => {
         console.log('>>>>=== leaved');
         state = 'leaved';
-        socket.disconect();        
+        socket.disconnect();        
         btnConnserver.disabled = false;
         btnLeave.disabled = true;
     });
@@ -110,7 +121,7 @@ function conn() {
         state = 'joined_unbind';
         closePeerConnection();
     });
-    socket.on('message',(room,data) => {
+    socket.on('message',(room,id,data) => {
         console.log('>>>>=== message');
         //媒体协商
         if(data) {
@@ -125,18 +136,20 @@ function conn() {
             }
             else if (data.type === 'candidate') {
                 var candidate = new RTCIceCandidate({
-                    
+                    sdpMLineIndex: data.label,
+                    candidate: data.candidate
                 });
+                pc.addIceCandidate(candidate);	
             }
             else {
-                concole.error('the meddage is invalid!',data);
+                console.log('the message is invalid!',data.type);
             }
         }
     });
 
     socket.emit('join',rooms);
 
-    return;
+    return true;
 }
 
 function connserver() {
@@ -151,28 +164,37 @@ function createPeerConnection() {
         var pcConfig = {
             'iceServers': [
                 {
-                    'urls': '',
-                    'credential': '',
-                    'username': ''
+                    'urls': 'turn:192.168.87.129:3478',
+                    'credential': 'caoboxi',
+                    'username': 'mypasswd'
                 }
             ]
-        }
+        };
         pc = new RTCPeerConnection();
 
         pc.onicecandidate = (e) => {
-            if(e.candidate) {
-                //将candidate以message的方式通过信令服务器发送给对端
+                if(e.candidate) {
+                    //将candidate以message的方式通过信令服务器发送给对端
+                    sendMessage(rooms, {
+			    		type: 'candidate',
+			    		label:e.candidate.sdpMLineIndex, 
+			    		id:e.candidate.sdpMid, 
+			    		candidate: e.candidate.candidate
+			    	});
+			    }else{
+			    	console.log('this is the end candidate');
+			    }
             }
-        }
 
         pc.ontrack = (e) => {
+            console.log('this is ontrack');
             remoteVideo.srcObject = e.streams[0];
         }
     }
 
     if(localStream) {
         localStream.getTracks().forEach((track) => {
-            pc1.addTrack(track,localStream);
+            pc.addTrack(track,localStream);
         });
     }
     

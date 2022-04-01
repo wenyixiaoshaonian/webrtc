@@ -41,6 +41,7 @@ io.sockets.on('connection',(socket)=> {
 			socket.leave(room);
 			socket.emit('full',room,socket.id);
 		}
+		
 //		socket.to(room).emit('joined',room,socket.id);	//房间内除自己以外
 //		io.in(room).emit('joined',room,socket.id);		//房间内所有人
 //		socket.broadcast.emit('joined',room,socket.id);	//站点所有人 除自己
@@ -50,15 +51,15 @@ io.sockets.on('connection',(socket)=> {
 		var users = Object.keys(myroom.sockets).length;
 
 		socket.leave(room);
-
-		socket.emit('leaved',room,socket.id);
 		socket.to(room).emit('bye',room,socket.id);
+		socket.emit('leaved',room,socket.id);
+		
 //		socket.to(room).emit('joined',room,socket.id);	//房间内除自己以外
 //		io.in(room).emit('joined',room,socket.id);		//房间内所有人
 //		socket.broadcast.emit('joined',room,socket.id);	//站点所有人 除自己
 	});	
-	socket.on('message', (room, data)=>{
-		io.to(room).emit('message', room, socket.id, data)//房间内所有人
+	socket.on('message', (room,id,data)=>{
+		socket.to(room).emit('message',room,id,data);
 	});
 })
 https_server.listen(443,'0.0.0.0');
