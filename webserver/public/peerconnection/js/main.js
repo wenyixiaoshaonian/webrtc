@@ -16,8 +16,13 @@ var rooms = 111111;
 var pc;
 var state = 'init';
 function getMediaStream(stream) {
+    console.log("getMediaStream....");
 	localVideo.srcObject = stream;
 	localStream = stream;
+
+    //一定要放到getMediaStream之后再调用
+	//否则就会出现绑定失败的情况,因为js都为异步调用，不会等待getMediaStream完成
+    conn();
 }
 function sendMessage(rooms,data) {
     if(socket) {
@@ -35,12 +40,14 @@ function getOffer(desc) {
     //将收集好的本地媒体信息填充到pc中，同时向stun服务器发送收集候选者的请求
 	pc.setLocalDescription(desc);
     //将SDP通过信令服务器发送给对端
+    console.log("send offer....");
 	sendMessage(rooms,desc);
 }
 function getAnswer(desc) {
     //将收集好的本地媒体信息填充到pc中，同时向stun服务器发送收集候选者的请求
 	pc.setLocalDescription(desc);
     //将SDP通过信令服务器发送给对端
+    console.log("send answer....");
 	sendMessage(rooms,desc);
 }
 
@@ -126,15 +133,18 @@ function conn() {
         //媒体协商
         if(data) {
             if(data.type === 'offer') {
+                console.log("recv offer.... id : ",id);
                 pc.setRemoteDescription(new RTCSessionDescription(data));
                 pc.createAnswer()
                         .then(getAnswer)
                         .catch(handleAnswerError);
             }
             else if (data.type === 'answer') {
+                console.log("recv answer.... id : ",id);
                 pc.setRemoteDescription(new RTCSessionDescription(data));
             }
             else if (data.type === 'candidate') {
+                console.log("recv candidate.... id : ",id);
                 var candidate = new RTCIceCandidate({
                     sdpMLineIndex: data.label,
                     candidate: data.candidate
@@ -155,7 +165,7 @@ function conn() {
 function connserver() {
     start();
 
-    conn();
+//    conn();
     return true;
 }
 
@@ -174,6 +184,7 @@ function createPeerConnection() {
 
         pc.onicecandidate = (e) => {
                 if(e.candidate) {
+                    console.log("send candidate....");
                     //将candidate以message的方式通过信令服务器发送给对端
                     sendMessage(rooms, {
 			    		type: 'candidate',
@@ -193,6 +204,7 @@ function createPeerConnection() {
     }
 
     if(localStream) {
+        console.log('this is addTrack....');
         localStream.getTracks().forEach((track) => {
             pc.addTrack(track,localStream);
         });
