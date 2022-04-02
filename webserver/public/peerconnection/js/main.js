@@ -5,10 +5,11 @@ var remoteVideo = document.querySelector('video#remotevideo');
 
 var btnConnserver = document.querySelector('button#connserver');
 var btnLeave = document.querySelector('button#leave');
-var inputShareDesk = document.querySelector('input#shareDesk');
 
 var offer = document.querySelector('textarea#offer');
 var answer = document.querySelector('textarea#answer');
+
+var bandwidth = document.querySelector('select#bandwidth');
 
 var socket;
 var localStream = null;
@@ -49,6 +50,7 @@ function getAnswer(desc) {
     //将SDP通过信令服务器发送给对端
     console.log("send answer....");
 	sendMessage(rooms,desc);
+    bandwidth.disabled = false;
 }
 
 function call() {
@@ -142,6 +144,7 @@ function conn() {
             else if (data.type === 'answer') {
                 console.log("recv answer.... id : ",id);
                 pc.setRemoteDescription(new RTCSessionDescription(data));
+                bandwidth.disabled = false;
             }
             else if (data.type === 'candidate') {
                 console.log("recv candidate.... id : ",id);
@@ -237,9 +240,45 @@ function leave() {
 
     btnConnserver.disabled = false;
     btnLeave.disabled = true;
+    bandwidth.disabled = true;
+}
+function change_bw(){
+	bandwidth.disabled = true;
+	var bw = bandwidth.options[bandwidth.selectedIndex].value;
+
+	var vsender = null;
+	var senders = pc.getSenders();
+
+	senders.forEach(sender => {
+		if(sender && sender.track.kind === 'video'){
+			vsender = sender;
+		}
+	});
+
+	var parameters = vsender.getParameters();
+
+	if(!parameters.encodings){
+		parameters.encodings=[{}];
+	}
+
+	if(bw === 'unlimited'){
+		delete parameters.encodings[0].maxBitrate;
+	}else{
+		parameters.encodings[0].maxBitrate = bw * 1000;
+	}
+
+	vsender.setParameters(parameters)
+		.then(()=>{
+			bandwidth.disabled = false;
+		})
+		.catch(err => {
+			console.error(err)
+		});
+
+	return;
 }
 btnConnserver.onclick = connserver;
 btnLeave.onclick = leave;
-
+bandwidth.onchange = change_bw;
 
 
