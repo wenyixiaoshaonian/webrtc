@@ -16,6 +16,15 @@ var localStream = null;
 var rooms = 111111;
 var pc;
 var state = 'init';
+
+var bitrateGraph;
+var bitrateSeries;
+
+var packetGraph;
+var packetSeries;
+
+var lastResult;
+
 function getMediaStream(stream) {
     console.log("getMediaStream....");
 	localVideo.srcObject = stream;
@@ -24,6 +33,14 @@ function getMediaStream(stream) {
     //一定要放到getMediaStream之后再调用
 	//否则就会出现绑定失败的情况,因为js都为异步调用，不会等待getMediaStream完成
     conn();
+
+    bitrateSeries = new TimelineDataSeries();
+    bitrateGraph = new TimelineGraphView('bitrateGraph','bitrateCanvas');
+    bitrateGraph.updateEndDate();
+
+    packetSeries = new TimelineDataSeries();
+	packetGraph = new TimelineGraphView('packetGraph', 'packetCanvas');
+	packetGraph.updateEndDate();
 }
 function sendMessage(rooms,data) {
     if(socket) {
@@ -277,6 +294,44 @@ function change_bw(){
 
 	return;
 }
+window.setInterval(() => {
+    if(!pc)
+        return;
+    const sender = pc.getSenders()[0];
+    if(!sender) {
+        return;
+    }
+    sender.getStats()
+            .then((reports) => {
+                reports.forEach(report => {
+                    let bytes;
+                    let packets;
+                    if(report.type === 'outbound-rtp') {
+                        if(report.isRemote) {
+                            return;
+                        }
+                        const now = report.timestamp;
+                        bytes = report.bytesSent;
+                        packets = report.packetsSent;
+                        if(lastResult && lastResult.has(report.id)) {
+                            // calculate bitrate
+                            const bitrate = 8 * (bytes - lastResult.get(report.id).bytesSent)
+                                                / (now - lastResult.get(report.id).timestamp);
+
+                            bitrateSeries.addPoint(now, bitrate);
+                            bitrateGraph.setDataSeries([bitrateSeries]);
+                            bitrateGraph.updateEndDate();
+
+                            // calculate number of packets and append to chart
+                            packetSeries.addPoint(now, packets - lastResult.get(report.id).packetsSent);
+                            packetGraph.setDataSeries([packetSeries]);
+                            packetGraph.updateEndDate();
+                        }
+                    }
+                });
+                lastResult = reports;
+            });
+},1000)
 btnConnserver.onclick = connserver;
 btnLeave.onclick = leave;
 bandwidth.onchange = change_bw;

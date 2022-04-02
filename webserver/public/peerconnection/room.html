@@ -43,8 +43,16 @@
 					<textarea id="answer"></textarea>
 				</div>
 			</div>
+			<div class="graph-container" id="bitrateGraph">
+				<div>Bitrate</div>
+				<canvas id="bitrateCanvas"></canvas>
+			</div>
+			<div class="graph-container" id="packetGraph">
+				<div>Packets sent per second</div>
+				<canvas id="packetCanvas"></canvas>
+			</div>
 		</div>
-
+		<script src="js/third_party/graph.js"></script>
 		<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script> -->
 		<script src="../chatroom/socket.io-client/dist/socket.io.js"></script>
 		<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
