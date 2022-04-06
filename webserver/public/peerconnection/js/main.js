@@ -11,10 +11,15 @@ var answer = document.querySelector('textarea#answer');
 
 var bandwidth = document.querySelector('select#bandwidth');
 
+var chat = document.querySelector('textarea#chat');
+var send_text = document.querySelector('textarea#sendtext');
+var btnSend = document.querySelector('button#send');
+
 var socket;
 var localStream = null;
 var rooms = 111111;
-var pc;
+var pc = null;
+var dc = null;
 var state = 'init';
 
 var bitrateGraph;
@@ -103,6 +108,26 @@ function start() {
 							.catch(handleError)
 	}
 }
+function receivemsg(e) {
+    var msg = e.data;
+    if(msg) {
+        chat.value += '->' + msg + '\r\n';
+    }
+    else {
+        console.error('received message error!');
+    }
+}
+function dataChannelStateChange() {
+    var readyState = dc.readyState;
+    if(readyState === 'open') {
+        send_text.disabled = false;
+        send.disabled = false;
+    }
+    else {
+        send_text.disabled = true;
+        send.disabled = true;
+    }
+}
 
 function conn() {
     socket = io.connect();
@@ -124,6 +149,11 @@ function conn() {
         if(state === 'joined_unbind') {
             createPeerConnection();
         }
+        dc = pc.createDataChannel('chat');
+        dc.onmessage = receivemsg;
+        dc.onopen = dataChannelStateChange;
+        dc.onclose = dataChannelStateChange;
+
         state = 'joined_conn';
 
         //开始媒体协商
@@ -220,6 +250,15 @@ function createPeerConnection() {
         pc.ontrack = (e) => {
             console.log('this is ontrack');
             remoteVideo.srcObject = e.streams[0];
+        }
+
+        pc.ondatachannel = (e)=> {
+            if(!dc){
+                dc = e.channel;
+                dc.onmessage = receivemsg;
+                dc.onopen = dataChannelStateChange;
+                dc.onclose = dataChannelStateChange;
+            }
         }
     }
 
@@ -331,9 +370,18 @@ window.setInterval(() => {
                 });
                 lastResult = reports;
             });
-},1000)
+},1000);
+
+function sendText() {
+    var data = send_text.value;
+    if(data) {
+        dc.send(data);
+    }
+    send_text.value = '';
+    chat.value += '<-' + data + '\r\n';
+}
 btnConnserver.onclick = connserver;
 btnLeave.onclick = leave;
 bandwidth.onchange = change_bw;
 
-
+btnSend.onclick = sendText;
